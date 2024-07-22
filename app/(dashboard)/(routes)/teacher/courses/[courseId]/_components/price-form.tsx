@@ -29,11 +29,13 @@ interface PriceFormProps {
 
 const formSchema = z.object({
   price: z.coerce.number(),
+  isFree: z.boolean().optional(),
 });
 
 export const PriceForm = ({ initialData, courseId }: PriceFormProps) => {
   const router = useRouter();
   const [isEditing, setIsEditing] = useState(false);
+  const [isFree, setIsFree] = useState(initialData?.isFree || false);
 
   const toggleEdit = () => setIsEditing((current) => !current);
 
@@ -41,6 +43,7 @@ export const PriceForm = ({ initialData, courseId }: PriceFormProps) => {
     resolver: zodResolver(formSchema),
     defaultValues: {
       price: initialData?.price || undefined,
+      isFree: initialData?.isFree || false,
     },
   });
 
@@ -48,7 +51,8 @@ export const PriceForm = ({ initialData, courseId }: PriceFormProps) => {
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
-      await axios.patch(`/api/courses/${courseId}`, values);
+      const updatedValues = { ...values, price: values.isFree ? 0 : values.price };
+      await axios.patch(`/api/courses/${courseId}`, updatedValues);
       toast.success("Course updated");
       toggleEdit();
       router.refresh();
@@ -90,22 +94,47 @@ export const PriceForm = ({ initialData, courseId }: PriceFormProps) => {
           >
             <FormField
               control={form.control}
-              name="price"
+              name="isFree"
               render={({ field }) => (
                 <FormItem>
                   <FormControl>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      disabled={isSubmitting}
-                      placeholder="Set a price for your course"
-                      {...field}
-                    />
+                    <label className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        {...field}
+                        checked={isFree}
+                        onChange={(e) => {
+                          field.onChange(e);
+                          setIsFree(e.target.checked);
+                        }}
+                      />
+                      <span>Curso Gratuito</span>
+                    </label>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
+            {!isFree && (
+              <FormField
+                control={form.control}
+                name="price"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        disabled={isSubmitting}
+                        placeholder="Set a price for your course"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
             <div className="flex items-center gap-x-2">
               <Button disabled={!isValid || isSubmitting} type="submit">
                 Save

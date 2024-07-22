@@ -20,8 +20,16 @@ export const CourseEnrollButton = ({
   const onClick = async () => {
     try {
       setIsLoading(true);
-      const response = await axios.post(`/api/courses/${courseId}/checkout`);
-      window.location.assign(response.data.url);
+      // Simular uma resposta bem-sucedida da Stripe
+      const response = await axios.post(`/api/simulate-stripe-response`, {
+        courseId,
+      });
+      if (response.data.success) {
+        toast.success("Enrollment successful");
+        // Redirecionar ou atualizar a página conforme necessário
+      } else {
+        toast.error("Enrollment failed");
+      }
     } catch (error) {
       toast.error("Something went wrong");
     } finally {
@@ -36,7 +44,7 @@ export const CourseEnrollButton = ({
       className="w-full md:w-auto"
       size="sm"
     >
-      Enroll for {formatPrice(price)}
+      {price > 0 ? `Enroll for ${formatPrice(price)}` : "Enroll for Free"}
     </Button>
   );
 };
